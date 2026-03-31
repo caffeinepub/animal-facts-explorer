@@ -10,19 +10,31 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
-export interface Animal {
+export interface Dinosaur {
   'id' : bigint,
+  'era' : string,
+  'period' : string,
+  'diet' : string,
   'name' : string,
-  'shortFact' : string,
-  'category' : string,
-  'conservationStatus' : string,
-  'facts' : Array<string>,
+  'description' : string,
+  'length' : string,
+  'interestingFact' : string,
+}
+export interface DinosaurInput {
+  'era' : string,
+  'period' : string,
+  'diet' : string,
+  'name' : string,
+  'description' : string,
+  'length' : string,
+  'interestingFact' : string,
 }
 export interface _SERVICE {
-  'getAllAnimals' : ActorMethod<[], Array<Animal>>,
-  'getAnimal' : ActorMethod<[bigint], Animal>,
-  'getAnimalsByCategory' : ActorMethod<[string], Array<Animal>>,
-  'getCategories' : ActorMethod<[], Array<string>>,
+  'addDinosaur' : ActorMethod<[DinosaurInput], undefined>,
+  'getAllDinosaurs' : ActorMethod<[], Array<Dinosaur>>,
+  'getDinosaurById' : ActorMethod<[bigint], Dinosaur>,
+  'getDinosaursByEra' : ActorMethod<[string], Array<Dinosaur>>,
+  'getQuickFunFacts' : ActorMethod<[], Array<string>>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

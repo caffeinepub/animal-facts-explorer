@@ -1,1080 +1,810 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ChevronRight, ExternalLink, Leaf, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Microscope,
+  Search,
+  Star,
+  Trophy,
+  X,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useState } from "react";
-import type { Animal } from "./backend.d";
-import { useGetAllAnimals } from "./hooks/useQueries";
+import { useEffect, useRef, useState } from "react";
+import { type Dinosaur, type Era, dinosaurs } from "./data/dinosaurs";
 
-const queryClient = new QueryClient();
+type EraFilter = "All" | Era;
 
-const SAMPLE_ANIMALS: Animal[] = [
-  {
-    id: BigInt(1),
-    name: "Snow Leopard",
-    category: "Rare Animals",
-    conservationStatus: "Vulnerable",
-    shortFact:
-      "Can leap up to 50 feet horizontally, making it one of the most agile big cats on Earth.",
-    facts: [
-      "Snow leopards are found in 12 countries across Central Asia.",
-      "Their thick, spotted coats provide perfect camouflage in rocky terrain.",
-      "They cannot roar — instead they make a chuffing sound called a 'prusten'.",
-      "Their long tails help with balance and can be wrapped around the body for warmth.",
-      "Fewer than 4,000 individuals remain in the wild.",
-    ],
-  },
-  {
-    id: BigInt(2),
-    name: "Okapi",
-    category: "Rare Animals",
-    conservationStatus: "Endangered",
-    shortFact:
-      "Often called the 'forest giraffe', the okapi is the only living relative of the giraffe.",
-    facts: [
-      "Okapis were completely unknown to science until 1901.",
-      "Their prehensile tongues are long enough to clean their own ears.",
-      "Okapis produce infrasound below human hearing to communicate.",
-      "The striped hindquarters help camouflage them in the dense rainforest.",
-      "Native only to the Democratic Republic of Congo.",
-    ],
-  },
-  {
-    id: BigInt(3),
-    name: "Tyrannosaurus Rex",
-    category: "Dinosaurs",
-    conservationStatus: "Extinct",
-    shortFact:
-      "One of the largest land predators ever, with a bite force of 12,800 pounds — enough to crush bone.",
-    facts: [
-      "T. rex lived approximately 68–66 million years ago in the Late Cretaceous period.",
-      "Its tiny arms were actually quite powerful and could lift around 400 pounds.",
-      "T. rex likely had feathers, at least during its juvenile stage.",
-      "They could smell prey from several miles away.",
-      "A full-grown T. rex weighed about 8 metric tons.",
-    ],
-  },
-  {
-    id: BigInt(4),
-    name: "Quetzalcoatlus",
-    category: "Dinosaurs",
-    conservationStatus: "Extinct",
-    shortFact:
-      "The largest flying animal ever known, with a wingspan wider than a school bus at up to 12 meters.",
-    facts: [
-      "Named after the Aztec feathered serpent god Quetzalcoatl.",
-      "Quetzalcoatlus walked on four limbs when on the ground.",
-      "It could travel 16,000 km without stopping, soaring on thermals.",
-      "Stood as tall as a modern giraffe when on the ground.",
-      "Likely ate fish, small animals, and carrion.",
-    ],
-  },
-  {
-    id: BigInt(5),
-    name: "Mantis Shrimp",
-    category: "Sea Creatures",
-    conservationStatus: "Least Concern",
-    shortFact:
-      "Has 16 types of photoreceptors — humans have just 3 — and can punch with the force of a bullet.",
-    facts: [
-      "The mantis shrimp's punch accelerates faster than a .22 caliber bullet.",
-      "They can see ultraviolet, infrared, and polarized light.",
-      "Their clubs can withstand forces that would shatter glass.",
-      "Each eye moves independently, allowing 360-degree vision.",
-      "They can strike prey in under 8 milliseconds.",
-    ],
-  },
-  {
-    id: BigInt(6),
-    name: "Blue Whale",
-    category: "Sea Creatures",
-    conservationStatus: "Endangered",
-    shortFact:
-      "The largest animal ever known to have existed — its heart alone is the size of a small car.",
-    facts: [
-      "Blue whales can reach lengths of up to 100 feet (30 meters).",
-      "Their vocalizations can be heard up to 1,000 miles away underwater.",
-      "A blue whale's tongue weighs as much as an elephant.",
-      "They consume up to 40 million krill per day — about 3,600 kg.",
-      "Blue whales can live up to 90 years.",
-    ],
-  },
-  {
-    id: BigInt(7),
-    name: "African Elephant",
-    category: "Land Animals",
-    conservationStatus: "Vulnerable",
-    shortFact:
-      "The largest land animal on Earth, with a brain three times larger than a human's and remarkable memory.",
-    facts: [
-      "African elephants can recognize themselves in mirrors — a sign of self-awareness.",
-      "Elephants grieve their dead and hold 'funerals'.",
-      "They communicate through infrasound rumbles that travel miles.",
-      "An elephant's trunk contains over 40,000 muscles.",
-      "They can live up to 70 years in the wild.",
-    ],
-  },
-  {
-    id: BigInt(8),
-    name: "Fennec Fox",
-    category: "Land Animals",
-    conservationStatus: "Least Concern",
-    shortFact:
-      "The world's smallest fox, with ears proportionally larger than any other canid — up to 6 inches long.",
-    facts: [
-      "Fennec foxes live in the Sahara Desert and can survive without free-standing water.",
-      "Their large ears dissipate heat and help locate prey underground.",
-      "Fennec foxes are the national animal of Algeria.",
-      "They are highly social and live in groups of up to 10.",
-      "Can run up to 25 mph despite their tiny size.",
-    ],
-  },
-];
+interface QuizResult {
+  dinoId: string;
+  score: number;
+  total: number;
+}
 
-const CATEGORIES = [
-  "Rare Animals",
-  "Dinosaurs",
-  "Sea Creatures",
-  "Land Animals",
-];
+function loadResults(): Record<string, QuizResult> {
+  try {
+    const raw = localStorage.getItem("dino-quiz-results");
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
 
-const CATEGORY_CONFIG: Record<
-  string,
-  { emoji: string; gradient: string; pill: string; desc: string }
-> = {
-  "Rare Animals": {
-    emoji: "🦁",
-    gradient:
-      "linear-gradient(135deg, oklch(0.38 0.12 290) 0%, oklch(0.50 0.16 305) 100%)",
-    pill: "bg-purple-100 text-purple-800",
-    desc: "Elusive species on the edge of survival",
-  },
-  Dinosaurs: {
-    emoji: "🦕",
-    gradient:
-      "linear-gradient(135deg, oklch(0.52 0.14 55) 0%, oklch(0.65 0.17 70) 100%)",
-    pill: "bg-amber-100 text-amber-800",
-    desc: "Prehistoric giants that ruled the Earth",
-  },
-  "Sea Creatures": {
-    emoji: "🐙",
-    gradient:
-      "linear-gradient(135deg, oklch(0.35 0.12 230) 0%, oklch(0.50 0.15 200) 100%)",
-    pill: "bg-cyan-100 text-cyan-800",
-    desc: "Wonders of the deep ocean world",
-  },
-  "Land Animals": {
-    emoji: "🐘",
-    gradient:
-      "linear-gradient(135deg, oklch(0.38 0.12 145) 0%, oklch(0.52 0.15 155) 100%)",
-    pill: "bg-emerald-100 text-emerald-800",
-    desc: "Remarkable creatures of land and forest",
-  },
-};
+function saveResult(result: QuizResult) {
+  const results = loadResults();
+  results[result.dinoId] = result;
+  localStorage.setItem("dino-quiz-results", JSON.stringify(results));
+}
 
-const ANIMAL_IMAGES: Record<string, string> = {
-  "Snow Leopard": "/assets/generated/animal-snow-leopard.dim_600x400.jpg",
-  Okapi: "/assets/generated/animal-okapi.dim_600x400.jpg",
-  "Tyrannosaurus Rex": "/assets/generated/animal-trex.dim_600x400.jpg",
-  Quetzalcoatlus: "/assets/generated/animal-quetzalcoatlus.dim_600x400.jpg",
-  "Mantis Shrimp": "/assets/generated/animal-mantis-shrimp.dim_600x400.jpg",
-  "Blue Whale": "/assets/generated/animal-blue-whale.dim_600x400.jpg",
-  "African Elephant": "/assets/generated/animal-elephant.dim_600x400.jpg",
-  "Fennec Fox": "/assets/generated/animal-fennec-fox.dim_600x400.jpg",
-};
+function EraBadge({ era }: { era: Era }) {
+  const cls = {
+    Triassic: "era-triassic",
+    Jurassic: "era-jurassic",
+    Cretaceous: "era-cretaceous",
+  }[era];
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${cls}`}
+    >
+      {era}
+    </span>
+  );
+}
 
-const STATUS_COLORS: Record<string, string> = {
-  "Least Concern": "bg-green-100 text-green-800",
-  Vulnerable: "bg-yellow-100 text-yellow-800",
-  Endangered: "bg-orange-100 text-orange-800",
-  "Critically Endangered": "bg-red-100 text-red-800",
-  Extinct: "bg-gray-200 text-gray-700",
-};
-
-const SKELETON_KEYS = ["sk1", "sk2", "sk3", "sk4"];
-
-function AnimalCard({
-  animal,
+function DinoCard({
+  dino,
+  quizResult,
+  onQuiz,
   index,
-  onLearnMore,
-}: { animal: Animal; index: number; onLearnMore: (a: Animal) => void }) {
-  const cfg =
-    CATEGORY_CONFIG[animal.category] ?? CATEGORY_CONFIG["Rare Animals"];
-  const img = ANIMAL_IMAGES[animal.name];
-  const statusCls =
-    STATUS_COLORS[animal.conservationStatus] ?? "bg-gray-100 text-gray-700";
+}: {
+  dino: Dinosaur;
+  quizResult?: QuizResult;
+  onQuiz: (dino: Dinosaur) => void;
+  index: number;
+}) {
+  const isPerfect = quizResult?.score === quizResult?.total;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 28 }}
+      initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.07 }}
-      className="bg-white rounded-2xl overflow-hidden border flex flex-col shadow-card hover:shadow-lg transition-shadow duration-300"
-      style={{ borderColor: "var(--card-border)" }}
-      data-ocid={`animals.item.${index + 1}`}
+      transition={{ duration: 0.4, delay: index * 0.04 }}
+      className={`group relative flex flex-col rounded-xl overflow-hidden border card-texture transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
+        isPerfect && quizResult
+          ? "perfect-score border-yellow-600/40"
+          : "border-border"
+      }`}
+      style={{ background: "oklch(22 0.05 40 / 0.95)" }}
+      data-ocid={`dino.item.${index + 1}`}
     >
-      <div className="relative h-44 overflow-hidden">
-        {img ? (
-          <img
-            src={img}
-            alt={animal.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div
-            className="w-full h-full flex items-center justify-center text-6xl"
-            style={{ background: cfg.gradient }}
-          >
-            {cfg.emoji}
-          </div>
-        )}
-        <span
-          className={`absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full ${cfg.pill}`}
-        >
-          {animal.category}
-        </span>
+      {isPerfect && quizResult && (
+        <div className="absolute top-2 right-2 z-10 text-yellow-400 text-lg">
+          ⭐
+        </div>
+      )}
+      <div className="relative overflow-hidden h-44">
+        <img
+          src={dino.image}
+          alt={dino.name}
+          loading="lazy"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute bottom-2 left-3">
+          <EraBadge era={dino.era} />
+        </div>
       </div>
 
-      <div className="p-4 flex flex-col flex-1 gap-2">
-        <div className="flex items-start justify-between gap-2">
-          <h3
-            className="font-bold text-base leading-tight"
-            style={{ color: "var(--text-dark)" }}
-          >
-            {animal.name}
-          </h3>
-          <span
-            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${statusCls}`}
-          >
-            {animal.conservationStatus}
-          </span>
+      <div className="flex flex-col flex-1 p-4 gap-3">
+        <h3 className="font-display text-xl font-bold text-foreground">
+          {dino.name}
+        </h3>
+
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-muted-foreground uppercase tracking-wider">
+              Diet
+            </span>
+            <span className="text-foreground font-medium">{dino.diet}</span>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-muted-foreground uppercase tracking-wider">
+              Length
+            </span>
+            <span className="text-foreground font-medium">{dino.length}</span>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-muted-foreground uppercase tracking-wider">
+              Weight
+            </span>
+            <span className="text-foreground font-medium">{dino.weight}</span>
+          </div>
         </div>
-        <p
-          className="text-sm leading-relaxed flex-1"
-          style={{ color: "var(--text-muted)" }}
-        >
-          {animal.shortFact}
+
+        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 flex-1">
+          {dino.funFact}
         </p>
-        <button
-          type="button"
-          className="mt-2 flex items-center gap-1 text-sm font-semibold transition-opacity hover:opacity-75"
-          style={{ color: "var(--teal-accent)" }}
-          onClick={() => onLearnMore(animal)}
-          data-ocid={`animals.secondary_button.${index + 1}`}
-        >
-          Learn More <ChevronRight className="w-4 h-4" />
-        </button>
+
+        <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/50">
+          {quizResult ? (
+            <span className="text-xs text-muted-foreground">
+              Quiz:{" "}
+              <span
+                className={
+                  quizResult.score === quizResult.total
+                    ? "text-yellow-400 font-bold"
+                    : "text-foreground"
+                }
+              >
+                {quizResult.score}/{quizResult.total}
+              </span>
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">Not attempted</span>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onQuiz(dino)}
+            className="text-xs border-primary/40 text-primary hover:bg-primary/10"
+            data-ocid={`dino.open_modal_button.${index + 1}`}
+          >
+            Take Quiz 🧠
+          </Button>
+        </div>
       </div>
     </motion.div>
   );
 }
 
-function CategoryCard({
-  category,
-  count,
-  active,
-  onClick,
-}: { category: string; count: number; active: boolean; onClick: () => void }) {
-  const cfg = CATEGORY_CONFIG[category] ?? CATEGORY_CONFIG["Rare Animals"];
-  return (
-    <motion.button
-      type="button"
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.2 }}
-      onClick={onClick}
-      className={`rounded-2xl overflow-hidden border text-left w-full transition-all duration-200 ${
-        active ? "shadow-md" : "hover:shadow-card"
-      }`}
-      style={{
-        borderColor: active ? "var(--teal-accent)" : "var(--card-border)",
-        boxShadow: active ? "0 0 0 2px var(--teal-accent)" : undefined,
-      }}
-      data-ocid="categories.tab"
-    >
-      <div
-        className="h-28 flex items-center justify-center text-5xl"
-        style={{ background: cfg.gradient }}
-      >
-        {cfg.emoji}
-      </div>
-      <div className="p-4 bg-white">
-        <p className="font-bold text-sm" style={{ color: "var(--text-dark)" }}>
-          {category}
-        </p>
-        <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-          {cfg.desc}
-        </p>
-        <p
-          className="text-xs font-semibold mt-2"
-          style={{ color: "var(--teal-accent)" }}
-        >
-          {count} animals
-        </p>
-      </div>
-    </motion.button>
-  );
-}
-
-function AnimalModal({
-  animal,
+function QuizModal({
+  dino,
+  open,
   onClose,
-}: { animal: Animal | null; onClose: () => void }) {
-  if (!animal) return null;
-  const cfg =
-    CATEGORY_CONFIG[animal.category] ?? CATEGORY_CONFIG["Rare Animals"];
-  const img = ANIMAL_IMAGES[animal.name];
-  const statusCls =
-    STATUS_COLORS[animal.conservationStatus] ?? "bg-gray-100 text-gray-700";
+  onComplete,
+}: {
+  dino: Dinosaur | null;
+  open: boolean;
+  onClose: () => void;
+  onComplete: (result: QuizResult) => void;
+}) {
+  const [qIndex, setQIndex] = useState(0);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<boolean[]>([]);
+  const [finished, setFinished] = useState(false);
+
+  // Reset when dino changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally reset on dino.id change
+  useEffect(() => {
+    if (open) {
+      setQIndex(0);
+      setSelected(null);
+      setAnswers([]);
+      setFinished(false);
+    }
+  }, [open, dino?.id]);
+
+  if (!dino) return null;
+
+  const question = dino.quiz[qIndex];
+  const score = answers.filter(Boolean).length;
+  const isAnswered = selected !== null;
+
+  function handleSelect(opt: string) {
+    if (isAnswered || !dino) return;
+    setSelected(opt);
+    const correct = opt === question.answer;
+    const newAnswers = [...answers, correct];
+    setAnswers(newAnswers);
+
+    if (qIndex === dino.quiz.length - 1) {
+      setTimeout(() => {
+        setFinished(true);
+        const result = {
+          dinoId: dino!.id,
+          score: newAnswers.filter(Boolean).length,
+          total: dino!.quiz.length,
+        };
+        onComplete(result);
+      }, 900);
+    } else {
+      setTimeout(() => {
+        setQIndex((i) => i + 1);
+        setSelected(null);
+      }, 900);
+    }
+  }
+
+  const totalQ = dino.quiz.length;
+  const isPerfect = score === totalQ;
 
   return (
-    <Dialog open={!!animal} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
-        className="max-w-lg p-0 overflow-hidden rounded-2xl"
-        data-ocid="animals.modal"
+        className="max-w-lg border-border"
+        style={{
+          background: "oklch(18 0.05 40)",
+          color: "oklch(var(--foreground))",
+        }}
+        data-ocid="quiz.dialog"
       >
-        <div className="relative h-52">
-          {img ? (
-            <img
-              src={img}
-              alt={animal.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div
-              className="w-full h-full flex items-center justify-center text-7xl"
-              style={{ background: cfg.gradient }}
-            >
-              {cfg.emoji}
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-3 right-3 bg-black/40 text-white rounded-full p-1 hover:bg-black/60 transition-colors"
-            data-ocid="animals.close_button"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="p-6">
-          <DialogHeader>
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <DialogTitle
-                className="text-xl font-bold"
-                style={{ color: "var(--text-dark)" }}
-              >
-                {animal.name}
-              </DialogTitle>
-              <span
-                className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${statusCls}`}
-              >
-                {animal.conservationStatus}
-              </span>
-            </div>
-            <span
-              className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full w-fit ${cfg.pill}`}
-            >
-              {animal.category}
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl text-foreground flex items-center gap-2">
+            <span>{dino.name}</span>
+            <span className="text-base font-normal">
+              <EraBadge era={dino.era} />
             </span>
-          </DialogHeader>
-          <div className="mt-4">
-            <h4
-              className="font-semibold text-sm mb-2"
-              style={{ color: "var(--text-dark)" }}
+          </DialogTitle>
+        </DialogHeader>
+
+        <AnimatePresence mode="wait">
+          {!finished ? (
+            <motion.div
+              key={qIndex}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.25 }}
+              className="flex flex-col gap-4"
             >
-              Amazing Facts
-            </h4>
-            <ul className="space-y-2">
-              {animal.facts.map((fact) => (
-                <li
-                  key={fact}
-                  className="flex gap-2.5 text-sm"
-                  style={{ color: "var(--text-muted)" }}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Question {qIndex + 1} of {totalQ}
+                </span>
+                <div className="flex gap-1">
+                  {dino.quiz.map((q, i) => (
+                    <div
+                      key={q.question.slice(0, 20)}
+                      className={`w-5 h-1.5 rounded-full transition-colors ${
+                        i < answers.length
+                          ? answers[i]
+                            ? "bg-green-500"
+                            : "bg-red-500"
+                          : i === qIndex
+                            ? "bg-primary"
+                            : "bg-muted"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <p className="text-lg font-semibold text-foreground leading-snug">
+                {question.question}
+              </p>
+
+              <div className="grid grid-cols-1 gap-2">
+                {question.options.map((opt) => {
+                  let cls =
+                    "w-full text-left px-4 py-3 rounded-lg border border-border/60 text-sm text-foreground transition-all cursor-pointer hover:border-primary/50 hover:bg-primary/5";
+                  if (isAnswered) {
+                    if (opt === question.answer) cls += " option-correct";
+                    else if (opt === selected) cls += " option-wrong";
+                    else cls += " opacity-50";
+                  }
+                  return (
+                    <button
+                      type="button"
+                      key={opt}
+                      className={cls}
+                      onClick={() => handleSelect(opt)}
+                      style={{ background: "oklch(25 0.04 40)" }}
+                      data-ocid="quiz.toggle"
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="result"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.35 }}
+              className="flex flex-col items-center gap-5 py-4"
+              data-ocid="quiz.success_state"
+            >
+              {isPerfect && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 200, delay: 0.1 }}
+                  className="text-6xl"
                 >
-                  <Leaf
-                    className="w-4 h-4 mt-0.5 flex-shrink-0"
-                    style={{ color: "var(--teal-accent)" }}
-                  />
-                  <span>{fact}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
+                  🏆
+                </motion.div>
+              )}
+              <div className="text-center">
+                <div className="text-5xl font-display font-bold text-primary">
+                  {score}/{totalQ}
+                </div>
+                <div className="text-muted-foreground mt-1">
+                  {isPerfect
+                    ? "Perfect score! Outstanding paleontologist!"
+                    : score >= 3
+                      ? "Great work! Almost there!"
+                      : score >= 2
+                        ? "Good effort! Keep learning!"
+                        : "Keep studying — you'll get there!"}
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  className="border-border"
+                  data-ocid="quiz.close_button"
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    setQIndex(0);
+                    setSelected(null);
+                    setAnswers([]);
+                    setFinished(false);
+                  }}
+                  className="bg-primary text-primary-foreground"
+                  data-ocid="quiz.secondary_button"
+                >
+                  Retry
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );
 }
 
-function FaunaApp() {
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const { data: backendAnimals, isLoading } = useGetAllAnimals();
-  const animals: Animal[] =
-    backendAnimals && backendAnimals.length > 0
-      ? backendAnimals
-      : SAMPLE_ANIMALS;
-
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const c of CATEGORIES) {
-      counts[c] = 0;
-    }
-    for (const a of animals) {
-      counts[a.category] = (counts[a.category] ?? 0) + 1;
-    }
-    return counts;
-  }, [animals]);
-
-  const filtered = useMemo(() => {
-    let list = animals;
-    if (activeCategory)
-      list = list.filter((a) => a.category === activeCategory);
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(
-        (a) =>
-          a.name.toLowerCase().includes(q) ||
-          a.shortFact.toLowerCase().includes(q),
-      );
-    }
-    return list;
-  }, [animals, activeCategory, searchQuery]);
-
-  const scrollToSection = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-    setMobileMenuOpen(false);
-  };
-
-  const handleNavClick = (category: string) => {
-    setActiveCategory(category);
-    scrollToSection("animals-section");
-  };
-
-  const totalFacts = animals.reduce((acc, a) => acc + a.facts.length, 0);
+function FunFactsCarousel() {
+  const facts = dinosaurs.map((d) => ({
+    id: d.id,
+    text: `🦕 ${d.name}: ${d.funFact}`,
+  }));
+  const doubled = [
+    ...facts.map((f) => ({ ...f, key: `a-${f.id}` })),
+    ...facts.map((f) => ({ ...f, key: `b-${f.id}` })),
+  ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      {/* Header */}
-      <header
-        className="fauna-header sticky top-0 z-40 shadow-header"
-        data-ocid="nav.panel"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveCategory(null);
-              scrollToSection("hero");
-            }}
-            className="flex items-center gap-2 text-white font-bold text-lg whitespace-nowrap flex-shrink-0"
-            data-ocid="nav.link"
-          >
-            <span className="text-2xl">🐾</span>
-            <span className="hidden sm:inline">Fauna Facts</span>
-          </button>
+    <section
+      id="fun-facts"
+      className="py-16 overflow-hidden"
+      data-ocid="funfacts.section"
+    >
+      <div className="max-w-6xl mx-auto px-6 mb-8">
+        <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
+          Fun Facts
+        </h2>
+        <p className="text-muted-foreground">
+          Fascinating discoveries from the prehistoric world
+        </p>
+      </div>
 
-          <nav className="hidden lg:flex items-center gap-1">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => handleNavClick(cat)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  activeCategory === cat
-                    ? "bg-white/20 text-white"
-                    : "text-white/80 hover:text-white hover:bg-white/10"
-                }`}
-                data-ocid="nav.link"
-              >
-                {cat}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => {
-                setActiveCategory(null);
-                scrollToSection("animals-section");
-              }}
-              className="px-3 py-1.5 rounded-full text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-              data-ocid="nav.link"
+      <div className="relative">
+        <div
+          className="flex gap-6 animate-marquee"
+          style={{ width: "max-content" }}
+        >
+          {doubled.map((item) => (
+            <div
+              key={item.key}
+              className="flex-shrink-0 w-72 rounded-xl p-5 border border-border card-texture"
+              style={{ background: "oklch(22 0.06 50 / 0.9)" }}
             >
-              All Animals
-            </button>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <div className="relative hidden sm:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
-              <input
-                type="text"
-                placeholder="Search animals…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-white/10 border border-white/20 rounded-full pl-9 pr-3 py-1.5 text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 w-48"
-                data-ocid="nav.search_input"
-              />
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {item.text}
+              </p>
             </div>
-            <button
-              type="button"
-              className="btn-teal text-xs hidden sm:inline-flex"
-              onClick={() => scrollToSection("animals-section")}
-              data-ocid="nav.primary_button"
-            >
-              Explore Facts
-            </button>
-            <button
-              type="button"
-              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              className="lg:hidden text-white/80 hover:text-white"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              data-ocid="nav.toggle"
-            >
-              {mobileMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <title>Menu</title>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              )}
-            </button>
-          </div>
+          ))}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function Leaderboard({ results }: { results: Record<string, QuizResult> }) {
+  const rows = dinosaurs
+    .filter((d) => results[d.id])
+    .map((d) => ({ dino: d, result: results[d.id] }));
+
+  const isMaster = dinosaurs.every(
+    (d) => results[d.id]?.score === results[d.id]?.total && results[d.id],
+  );
+
+  const attempted = rows.length;
+  const perfect = rows.filter((r) => r.result.score === r.result.total).length;
+
+  return (
+    <section id="leaderboard" className="py-16" data-ocid="leaderboard.section">
+      <div className="max-w-4xl mx-auto px-6">
+        <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
+          Leaderboard
+        </h2>
+        <p className="text-muted-foreground mb-8">
+          Your quiz progress across all dinosaurs
+        </p>
 
         <AnimatePresence>
-          {mobileMenuOpen && (
+          {isMaster && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="lg:hidden overflow-hidden"
-              style={{ background: "var(--teal-mid)" }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mb-8 rounded-2xl p-6 border border-yellow-600/40 perfect-score text-center"
+              data-ocid="leaderboard.panel"
             >
-              <div className="px-4 py-3 flex flex-col gap-1">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => handleNavClick(cat)}
-                    className="text-left px-3 py-2 text-white/90 hover:bg-white/10 rounded-lg text-sm"
-                  >
-                    {CATEGORY_CONFIG[cat].emoji} {cat}
-                  </button>
-                ))}
-                <div className="relative mt-2">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
-                  <input
-                    type="text"
-                    placeholder="Search animals…"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-white/10 border border-white/20 rounded-full pl-9 pr-3 py-2 text-sm text-white placeholder-white/50 focus:outline-none"
-                  />
-                </div>
+              <div className="text-5xl mb-3">🦕</div>
+              <div className="font-display text-2xl font-bold text-yellow-300">
+                Master Paleontologist
               </div>
+              <p className="text-muted-foreground mt-1">
+                You've aced all 18 dinosaur quizzes! Extraordinary achievement!
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
-      </header>
 
-      <main className="flex-1">
-        {/* Hero */}
-        <section
-          id="hero"
-          className="relative min-h-[520px] flex items-center overflow-hidden"
-          data-ocid="hero.section"
-        >
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(135deg, oklch(0.20 0.05 210) 0%, oklch(0.25 0.06 195) 40%, oklch(0.30 0.08 205) 70%, oklch(0.22 0.07 185) 100%)",
-            }}
-          />
-          <img
-            src="/assets/generated/hero-animals.dim_1600x700.jpg"
-            alt="Diverse wildlife collage"
-            className="absolute inset-0 w-full h-full object-cover opacity-35"
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(to right, rgba(11,43,54,0.85) 0%, rgba(11,43,54,0.4) 55%, transparent 100%)",
-            }}
-          />
-
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-16">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7 }}
-              className="max-w-xl"
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {[
+            { label: "Quizzes Attempted", value: attempted, icon: "📋" },
+            { label: "Perfect Scores", value: perfect, icon: "⭐" },
+            { label: "Total Quizzes", value: 18, icon: "🦴" },
+          ].map(({ label, value, icon }) => (
+            <div
+              key={label}
+              className="rounded-xl p-4 border border-border text-center card-texture"
+              style={{ background: "oklch(22 0.05 40 / 0.9)" }}
             >
-              <span
-                className="inline-block text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full mb-4 text-white/80"
-                style={{
-                  background: "rgba(42,174,156,0.25)",
-                  border: "1px solid rgba(42,174,156,0.4)",
-                }}
-              >
-                🌿 Wildlife Encyclopedia
-              </span>
-              <h1 className="text-4xl sm:text-5xl font-extrabold uppercase leading-tight text-white mb-4">
-                Discover The World's Most Amazing Animals
-              </h1>
-              <p className="text-base text-white/75 mb-8 leading-relaxed">
-                Explore fascinating facts about rare species, ancient dinosaurs,
-                mysterious sea creatures, and iconic land animals from every
-                corner of our planet.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  className="btn-orange"
-                  onClick={() => scrollToSection("animals-section")}
-                  data-ocid="hero.primary_button"
-                >
-                  Explore Animals
-                </button>
-                <button
-                  type="button"
-                  className="btn-teal"
-                  onClick={() => scrollToSection("categories-section")}
-                  data-ocid="hero.secondary_button"
-                >
-                  Browse Categories
-                </button>
+              <div className="text-2xl mb-1">{icon}</div>
+              <div className="font-display text-3xl font-bold text-primary">
+                {value}
               </div>
-            </motion.div>
-          </div>
-
-          <div className="absolute bottom-0 left-0 right-0 z-10">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="flex flex-wrap gap-6 pb-6">
-                {[
-                  { label: "Animal Species", value: `${animals.length}+` },
-                  { label: "Categories", value: "4" },
-                  { label: "Unique Facts", value: `${totalFacts}+` },
-                ].map((s) => (
-                  <div key={s.label} className="text-white">
-                    <p
-                      className="text-2xl font-extrabold"
-                      style={{ color: "var(--teal-accent)" }}
-                    >
-                      {s.value}
-                    </p>
-                    <p className="text-xs text-white/60 uppercase tracking-wide">
-                      {s.label}
-                    </p>
-                  </div>
-                ))}
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {label}
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* Categories */}
-        <section
-          id="categories-section"
-          className="py-16 bg-white"
-          data-ocid="categories.section"
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="text-center mb-10"
-            >
-              <p
-                className="text-xs font-bold tracking-widest uppercase mb-2"
-                style={{ color: "var(--teal-accent)" }}
-              >
-                Explore
-              </p>
-              <h2
-                className="text-2xl sm:text-3xl font-extrabold uppercase"
-                style={{ color: "var(--text-dark)" }}
-              >
-                Discover Animals By Category
-              </h2>
-              <p
-                className="mt-2 text-sm"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Click a category to filter the animal collection below
-              </p>
-            </motion.div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {CATEGORIES.map((cat, i) => (
-                <motion.div
-                  key={cat}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.08, duration: 0.4 }}
-                >
-                  <CategoryCard
-                    category={cat}
-                    count={categoryCounts[cat] ?? 0}
-                    active={activeCategory === cat}
-                    onClick={() => {
-                      setActiveCategory(activeCategory === cat ? null : cat);
-                      scrollToSection("animals-section");
-                    }}
-                  />
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Animals grid */}
-        <section
-          id="animals-section"
-          className="py-16"
-          style={{ background: "oklch(0.97 0.005 210)" }}
-          data-ocid="animals.section"
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="text-center mb-8"
-            >
-              <p
-                className="text-xs font-bold tracking-widest uppercase mb-2"
-                style={{ color: "var(--teal-accent)" }}
-              >
-                Facts
-              </p>
-              <h2
-                className="text-2xl sm:text-3xl font-extrabold uppercase"
-                style={{ color: "var(--text-dark)" }}
-              >
-                {activeCategory ?? "Featured Animal Facts"}
-              </h2>
-            </motion.div>
-
-            <div className="flex flex-wrap items-center gap-2 mb-8 justify-center">
-              <button
-                type="button"
-                onClick={() => setActiveCategory(null)}
-                className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-all ${
-                  !activeCategory
-                    ? "text-white border-transparent"
-                    : "border-gray-300 text-gray-600 hover:border-gray-400"
-                }`}
-                style={
-                  !activeCategory
-                    ? {
-                        background: "var(--teal-accent)",
-                        borderColor: "var(--teal-accent)",
-                      }
-                    : {}
-                }
-                data-ocid="animals.tab"
-              >
-                All Animals
-              </button>
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() =>
-                    setActiveCategory(cat === activeCategory ? null : cat)
-                  }
-                  className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-all ${
-                    activeCategory === cat
-                      ? "text-white border-transparent"
-                      : "border-gray-300 text-gray-600 hover:border-gray-400"
-                  }`}
-                  style={
-                    activeCategory === cat
-                      ? {
-                          background: "var(--teal-accent)",
-                          borderColor: "var(--teal-accent)",
-                        }
-                      : {}
-                  }
-                  data-ocid="animals.tab"
-                >
-                  {CATEGORY_CONFIG[cat].emoji} {cat}
-                </button>
-              ))}
-            </div>
-
-            {isLoading ? (
-              <div
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-                data-ocid="animals.loading_state"
-              >
-                {SKELETON_KEYS.map((k) => (
-                  <div
-                    key={k}
-                    className="bg-white rounded-2xl overflow-hidden border animate-pulse"
-                    style={{ borderColor: "var(--card-border)" }}
-                  >
-                    <div className="h-44 bg-gray-200" />
-                    <div className="p-4 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4" />
-                      <div className="h-3 bg-gray-100 rounded" />
-                      <div className="h-3 bg-gray-100 rounded w-5/6" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : filtered.length === 0 ? (
-              <div
-                className="text-center py-16"
-                data-ocid="animals.empty_state"
-              >
-                <p className="text-5xl mb-4">🔍</p>
-                <p
-                  className="font-bold text-lg"
-                  style={{ color: "var(--text-dark)" }}
-                >
-                  No animals found
-                </p>
-                <p
-                  className="text-sm mt-1"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Try a different search or category
-                </p>
-                <button
-                  type="button"
-                  className="btn-teal mt-4"
-                  onClick={() => {
-                    setActiveCategory(null);
-                    setSearchQuery("");
-                  }}
-                >
-                  Clear Filters
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {filtered.map((animal, i) => (
-                  <AnimalCard
-                    key={Number(animal.id)}
-                    animal={animal}
-                    index={i}
-                    onLearnMore={setSelectedAnimal}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Updates strip */}
-        <section className="fauna-strip py-14" data-ocid="updates.section">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="grid md:grid-cols-2 gap-10 items-start">
-              <div>
-                <p className="text-xs font-bold tracking-widest uppercase mb-2 text-white/60">
-                  Did You Know?
-                </p>
-                <h2 className="text-2xl sm:text-3xl font-extrabold uppercase text-white leading-tight mb-4">
-                  The Animal Kingdom Never Stops Surprising Us
-                </h2>
-                <p className="text-white/70 text-sm leading-relaxed mb-6">
-                  From the deepest ocean trenches to the highest mountain peaks,
-                  life finds a way. Explore our full collection of remarkable
-                  animal facts.
-                </p>
-                <button
-                  type="button"
-                  className="btn-teal"
-                  onClick={() => scrollToSection("animals-section")}
-                  data-ocid="updates.primary_button"
-                >
-                  <ExternalLink className="w-4 h-4" /> Explore All Animals
-                </button>
-              </div>
-              <div>
-                <p className="text-xs font-bold tracking-widest uppercase mb-4 text-white/60">
-                  Recently Added Facts
-                </p>
-                <div className="space-y-3">
-                  {SAMPLE_ANIMALS.slice(0, 3).map((animal, i) => {
-                    const cfg = CATEGORY_CONFIG[animal.category];
-                    return (
-                      <motion.button
-                        key={Number(animal.id)}
-                        type="button"
-                        initial={{ opacity: 0, x: 20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: i * 0.1 }}
-                        onClick={() => setSelectedAnimal(animal)}
-                        className="flex items-center gap-3 w-full p-3 rounded-xl text-left transition-colors hover:bg-white/10"
-                        style={{ background: "rgba(255,255,255,0.05)" }}
-                        data-ocid={`updates.item.${i + 1}`}
-                      >
-                        <div
-                          className="w-12 h-12 rounded-lg flex-shrink-0 flex items-center justify-center text-2xl"
-                          style={{ background: cfg.gradient }}
-                        >
-                          {cfg.emoji}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-semibold text-sm">
-                            {animal.name}
-                          </p>
-                          <p className="text-white/60 text-xs truncate">
-                            {animal.shortFact.slice(0, 60)}…
-                          </p>
-                        </div>
-                        <span
-                          className="text-xs font-semibold whitespace-nowrap"
-                          style={{ color: "var(--teal-accent)" }}
-                        >
-                          Learn More
-                        </span>
-                      </motion.button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="fauna-footer py-12" data-ocid="footer.section">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
-            <div className="col-span-2 md:col-span-1">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">🐾</span>
-                <span className="text-white font-bold text-lg">
-                  Fauna Facts
-                </span>
-              </div>
-              <p className="text-white/60 text-sm leading-relaxed">
-                Exploring the incredible diversity of life on Earth, from
-                prehistoric giants to the ocean's deepest mysteries.
-              </p>
-            </div>
-            <div>
-              <p className="text-white font-semibold text-sm mb-3 uppercase tracking-wide">
-                Quick Links
-              </p>
-              <ul className="space-y-2">
-                {(["Hero", "Categories", "Animals"] as const).map((l) => (
-                  <li key={l}>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        scrollToSection(
-                          l === "Hero"
-                            ? "hero"
-                            : l === "Categories"
-                              ? "categories-section"
-                              : "animals-section",
-                        )
-                      }
-                      className="text-white/60 text-sm hover:text-white transition-colors"
-                      data-ocid="footer.link"
-                    >
-                      {l}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <p className="text-white font-semibold text-sm mb-3 uppercase tracking-wide">
-                Categories
-              </p>
-              <ul className="space-y-2">
-                {CATEGORIES.map((cat) => (
-                  <li key={cat}>
-                    <button
-                      type="button"
-                      onClick={() => handleNavClick(cat)}
-                      className="text-white/60 text-sm hover:text-white transition-colors flex items-center gap-1.5"
-                      data-ocid="footer.link"
-                    >
-                      <span>{CATEGORY_CONFIG[cat].emoji}</span> {cat}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <p className="text-white font-semibold text-sm mb-3 uppercase tracking-wide">
-                Conservation
-              </p>
-              <ul className="space-y-2">
-                {Object.entries(STATUS_COLORS).map(([status, cls]) => (
-                  <li key={status} className="flex items-center gap-2">
-                    <Badge
-                      className={`text-[10px] px-1.5 py-0 ${cls} border-0`}
-                    >
-                      {status}
-                    </Badge>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          <div className="pt-6 border-t border-white/10 text-center">
-            <p className="text-white/40 text-xs">
-              © {new Date().getFullYear()}. Built with ❤️ using{" "}
-              <a
-                href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(typeof window !== "undefined" ? window.location.hostname : "")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-white/70 transition-colors"
-              >
-                caffeine.ai
-              </a>
-            </p>
-          </div>
+          ))}
         </div>
-      </footer>
 
-      <AnimalModal
-        animal={selectedAnimal}
-        onClose={() => setSelectedAnimal(null)}
-      />
-    </div>
+        {rows.length === 0 ? (
+          <div
+            className="rounded-xl p-8 border border-border text-center text-muted-foreground"
+            style={{ background: "oklch(22 0.05 40 / 0.6)" }}
+            data-ocid="leaderboard.empty_state"
+          >
+            <div className="text-4xl mb-3">🦴</div>
+            <p>No quizzes attempted yet. Go test your dinosaur knowledge!</p>
+          </div>
+        ) : (
+          <div
+            className="rounded-xl overflow-hidden border border-border"
+            style={{ background: "oklch(22 0.05 40 / 0.9)" }}
+            data-ocid="leaderboard.table"
+          >
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="text-muted-foreground">
+                    Dinosaur
+                  </TableHead>
+                  <TableHead className="text-muted-foreground">Era</TableHead>
+                  <TableHead className="text-muted-foreground">Diet</TableHead>
+                  <TableHead className="text-muted-foreground text-right">
+                    Score
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map(({ dino, result }, i) => {
+                  const isPerfect = result.score === result.total;
+                  return (
+                    <TableRow
+                      key={dino.id}
+                      className={`border-border/50 transition-colors ${
+                        isPerfect
+                          ? "bg-yellow-900/10 hover:bg-yellow-900/20"
+                          : "hover:bg-muted/20"
+                      }`}
+                      data-ocid={`leaderboard.row.${i + 1}`}
+                    >
+                      <TableCell className="font-semibold text-foreground">
+                        <div className="flex items-center gap-2">
+                          {isPerfect && (
+                            <span className="text-yellow-400">⭐</span>
+                          )}
+                          {dino.name}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <EraBadge era={dino.era} />
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {dino.diet}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span
+                          className={`font-bold text-base ${
+                            isPerfect ? "text-yellow-400" : "text-foreground"
+                          }`}
+                        >
+                          {result.score}/{result.total}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
 export default function App() {
+  const [era, setEra] = useState<EraFilter>("All");
+  const [search, setSearch] = useState("");
+  const [quizDino, setQuizDino] = useState<Dinosaur | null>(null);
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [results, setResults] =
+    useState<Record<string, QuizResult>>(loadResults);
+
+  const filtered = dinosaurs.filter((d) => {
+    const matchEra = era === "All" || d.era === era;
+    const matchSearch = d.name.toLowerCase().includes(search.toLowerCase());
+    return matchEra && matchSearch;
+  });
+
+  function openQuiz(dino: Dinosaur) {
+    setQuizDino(dino);
+    setQuizOpen(true);
+  }
+
+  function handleQuizComplete(result: QuizResult) {
+    saveResult(result);
+    setResults((prev) => ({ ...prev, [result.dinoId]: result }));
+  }
+
+  const eras: EraFilter[] = ["All", "Triassic", "Jurassic", "Cretaceous"];
+  const year = new Date().getFullYear();
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <FaunaApp />
-    </QueryClientProvider>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: "oklch(var(--background))" }}
+    >
+      {/* Header */}
+      <header
+        className="sticky top-0 z-40 border-b border-border/60 backdrop-blur-sm"
+        style={{ background: "oklch(15 0.05 40 / 0.95)" }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🦕</span>
+            <span className="font-display text-xl font-bold text-foreground">
+              DinosaurFacts<span className="text-primary">.com</span>
+            </span>
+          </div>
+          <nav className="hidden md:flex items-center gap-6 text-sm">
+            <a
+              href="#dinosaurs"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              data-ocid="nav.link"
+            >
+              Dinosaurs
+            </a>
+            <a
+              href="#fun-facts"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              data-ocid="nav.link"
+            >
+              Fun Facts
+            </a>
+            <a
+              href="#leaderboard"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              data-ocid="nav.link"
+            >
+              Leaderboard
+            </a>
+          </nav>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section
+        className="relative py-20 md:py-28 overflow-hidden"
+        style={{
+          background:
+            "linear-gradient(135deg, oklch(18 0.06 40) 0%, oklch(20 0.08 120) 50%, oklch(18 0.06 40) 100%)",
+        }}
+      >
+        <div
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 20% 50%, oklch(50 0.15 55 / 0.4) 0%, transparent 60%), radial-gradient(circle at 80% 30%, oklch(45 0.12 140 / 0.3) 0%, transparent 50%)",
+          }}
+        />
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          className="relative max-w-4xl mx-auto px-6 text-center"
+        >
+          <div className="text-6xl md:text-8xl mb-6">🦖</div>
+          <h1 className="font-display text-4xl md:text-6xl font-bold text-foreground mb-4">
+            Discover the Age of{" "}
+            <span style={{ color: "oklch(var(--primary))" }}>Dinosaurs</span>
+          </h1>
+          <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto mb-8">
+            Explore 18 prehistoric giants, test your knowledge, and earn the{" "}
+            <strong className="text-foreground">Master Paleontologist</strong>{" "}
+            badge.
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <a href="#dinosaurs">
+              <Button
+                size="lg"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                data-ocid="hero.primary_button"
+              >
+                Explore Dinosaurs <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </a>
+            <a href="#leaderboard">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-border"
+                data-ocid="hero.secondary_button"
+              >
+                <Trophy className="mr-2 h-4 w-4" /> Leaderboard
+              </Button>
+            </a>
+          </div>
+        </motion.div>
+      </section>
+
+      <main className="flex-1">
+        {/* Dinosaurs section */}
+        <section id="dinosaurs" className="py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+              <div>
+                <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">
+                  All Dinosaurs
+                </h2>
+                <p className="text-muted-foreground mt-1">
+                  {filtered.length} of {dinosaurs.length} shown
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search dinosaurs..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9 w-52 bg-muted/40 border-border"
+                    data-ocid="dino.search_input"
+                  />
+                </div>
+
+                {/* Era filter */}
+                <div
+                  className="flex gap-1 p-1 rounded-lg border border-border"
+                  style={{ background: "oklch(var(--muted))" }}
+                  data-ocid="dino.tab"
+                >
+                  {eras.map((e) => (
+                    <button
+                      type="button"
+                      key={e}
+                      onClick={() => setEra(e)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                        era === e
+                          ? "bg-primary text-primary-foreground shadow"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      data-ocid="dino.filter.tab"
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <AnimatePresence mode="wait">
+              {filtered.length === 0 ? (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-center py-16 text-muted-foreground"
+                  data-ocid="dino.empty_state"
+                >
+                  <div className="text-5xl mb-4">🦴</div>
+                  <p>No dinosaurs found. Try a different search or filter.</p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key={`${era}-${search}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25 }}
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+                  data-ocid="dino.list"
+                >
+                  {filtered.map((dino, i) => (
+                    <DinoCard
+                      key={dino.id}
+                      dino={dino}
+                      quizResult={results[dino.id]}
+                      onQuiz={openQuiz}
+                      index={i}
+                    />
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </section>
+
+        <FunFactsCarousel />
+        <Leaderboard results={results} />
+      </main>
+
+      {/* Quiz Modal */}
+      <QuizModal
+        dino={quizDino}
+        open={quizOpen}
+        onClose={() => setQuizOpen(false)}
+        onComplete={handleQuizComplete}
+      />
+
+      {/* Footer */}
+      <footer
+        className="border-t border-border/50 py-8"
+        style={{ background: "oklch(15 0.04 40)" }}
+      >
+        <div className="max-w-6xl mx-auto px-6 text-center text-sm text-muted-foreground">
+          © {year}. Built with ❤️ using{" "}
+          <a
+            href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary hover:underline"
+          >
+            caffeine.ai
+          </a>
+        </div>
+      </footer>
+    </div>
   );
 }

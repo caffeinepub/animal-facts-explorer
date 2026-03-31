@@ -8,39 +8,63 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const Animal = IDL.Record({
-  'id' : IDL.Nat,
+export const DinosaurInput = IDL.Record({
+  'era' : IDL.Text,
+  'period' : IDL.Text,
+  'diet' : IDL.Text,
   'name' : IDL.Text,
-  'shortFact' : IDL.Text,
-  'category' : IDL.Text,
-  'conservationStatus' : IDL.Text,
-  'facts' : IDL.Vec(IDL.Text),
+  'description' : IDL.Text,
+  'length' : IDL.Text,
+  'interestingFact' : IDL.Text,
+});
+export const Dinosaur = IDL.Record({
+  'id' : IDL.Nat,
+  'era' : IDL.Text,
+  'period' : IDL.Text,
+  'diet' : IDL.Text,
+  'name' : IDL.Text,
+  'description' : IDL.Text,
+  'length' : IDL.Text,
+  'interestingFact' : IDL.Text,
 });
 
 export const idlService = IDL.Service({
-  'getAllAnimals' : IDL.Func([], [IDL.Vec(Animal)], ['query']),
-  'getAnimal' : IDL.Func([IDL.Nat], [Animal], ['query']),
-  'getAnimalsByCategory' : IDL.Func([IDL.Text], [IDL.Vec(Animal)], ['query']),
-  'getCategories' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
+  'addDinosaur' : IDL.Func([DinosaurInput], [], []),
+  'getAllDinosaurs' : IDL.Func([], [IDL.Vec(Dinosaur)], ['query']),
+  'getDinosaurById' : IDL.Func([IDL.Nat], [Dinosaur], ['query']),
+  'getDinosaursByEra' : IDL.Func([IDL.Text], [IDL.Vec(Dinosaur)], ['query']),
+  'getQuickFunFacts' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
-  const Animal = IDL.Record({
-    'id' : IDL.Nat,
+  const DinosaurInput = IDL.Record({
+    'era' : IDL.Text,
+    'period' : IDL.Text,
+    'diet' : IDL.Text,
     'name' : IDL.Text,
-    'shortFact' : IDL.Text,
-    'category' : IDL.Text,
-    'conservationStatus' : IDL.Text,
-    'facts' : IDL.Vec(IDL.Text),
+    'description' : IDL.Text,
+    'length' : IDL.Text,
+    'interestingFact' : IDL.Text,
+  });
+  const Dinosaur = IDL.Record({
+    'id' : IDL.Nat,
+    'era' : IDL.Text,
+    'period' : IDL.Text,
+    'diet' : IDL.Text,
+    'name' : IDL.Text,
+    'description' : IDL.Text,
+    'length' : IDL.Text,
+    'interestingFact' : IDL.Text,
   });
   
   return IDL.Service({
-    'getAllAnimals' : IDL.Func([], [IDL.Vec(Animal)], ['query']),
-    'getAnimal' : IDL.Func([IDL.Nat], [Animal], ['query']),
-    'getAnimalsByCategory' : IDL.Func([IDL.Text], [IDL.Vec(Animal)], ['query']),
-    'getCategories' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
+    'addDinosaur' : IDL.Func([DinosaurInput], [], []),
+    'getAllDinosaurs' : IDL.Func([], [IDL.Vec(Dinosaur)], ['query']),
+    'getDinosaurById' : IDL.Func([IDL.Nat], [Dinosaur], ['query']),
+    'getDinosaursByEra' : IDL.Func([IDL.Text], [IDL.Vec(Dinosaur)], ['query']),
+    'getQuickFunFacts' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
   });
 };
 

@@ -1,225 +1,219 @@
 import Text "mo:core/Text";
 import Nat "mo:core/Nat";
-import Array "mo:core/Array";
 import List "mo:core/List";
+import Array "mo:core/Array";
 import Order "mo:core/Order";
 import Runtime "mo:core/Runtime";
 
+
+
 actor {
-  type Animal = {
+  type Dinosaur = {
     id : Nat;
     name : Text;
-    category : Text;
-    shortFact : Text;
-    facts : [Text];
-    conservationStatus : Text;
+    era : Text;
+    diet : Text;
+    period : Text;
+    length : Text;
+    description : Text;
+    interestingFact : Text;
   };
 
-  module Animal {
-    public func compare(animal1 : Animal, animal2 : Animal) : Order.Order {
-      Nat.compare(animal1.id, animal2.id);
+  public type DinosaurInput = {
+    name : Text;
+    era : Text;
+    diet : Text;
+    period : Text;
+    length : Text;
+    description : Text;
+    interestingFact : Text;
+  };
+
+  module Dinosaur {
+    public func compare(d1 : Dinosaur, d2 : Dinosaur) : Order.Order {
+      Nat.compare(d1.id, d2.id);
     };
   };
 
-  let animals = List.empty<Animal>();
+  var nextId = 13;
+  let dinosaurs = List.empty<Dinosaur>();
 
-  let categories = ["Rare Animals", "Dinosaurs", "Sea Creatures", "Land Animals"];
-  let categoriesArray = categories;
+  let quickFunFacts = [
+    "The heaviest dinosaur was Argentinosaurus weighing 77 tons.",
+    "Stegosaurus had a brain the size of a walnut.",
+    "Allosaurus fossils have been found with broken bones that healed.",
+    "The closest living relative to dinosaurs is the bird.",
+    "Some dinosaurs could run up to 40mph.",
+    "Triceratops means 'three-horned face'.",
+    "Dinosaurs lived on all continents.",
+    "The Smartest dinosaur was Troodon.",
+  ];
 
-  func seedAnimals() {
-    let seededAnimals = [
-      // Rare Animals
+  func seedDinosaurs() {
+    let seededDinosaurs = [
       {
         id = 1;
-        name = "Axolotl";
-        category = "Rare Animals";
-        shortFact = "The axolotl can regrow lost limbs.";
-        facts = [
-          "Axolotls are neotenic salamanders that retain juvenile features throughout their lifespan.",
-          "They are critically endangered in the wild due to urbanization and water pollution.",
-          "Axolotls are native to the lakes surrounding Mexico City.",
-          "They have the remarkable ability to regenerate their heart, brain, and spine without scarring.",
-        ];
-        conservationStatus = "Critically Endangered";
+        name = "Tyrannosaurus Rex";
+        era = "Cretaceous";
+        diet = "Carnivore";
+        period = "68-66 million years ago";
+        length = "40 feet";
+        description = "T-Rex was one of the largest meat-eating dinosaurs that ever lived.";
+        interestingFact = "It had one of the strongest bites of any animal ever.";
       },
       {
         id = 2;
-        name = "Saola";
-        category = "Rare Animals";
-        shortFact = "The Saola is often called the Asian unicorn.";
-        facts = [
-          "The Saola was discovered in 1992, making it one of the most recent large mammal discoveries.",
-          "It is native to the Annamite Range of Vietnam and Laos.",
-          "The Saola is rarely seen and has only been photographed a few times in the wild.",
-          "Less than a thousand individuals are estimated to exist.",
-        ];
-        conservationStatus = "Critically Endangered";
+        name = "Triceratops";
+        era = "Cretaceous";
+        diet = "Herbivore";
+        period = "68-66 million years ago";
+        length = "30 feet";
+        description = "Triceratops was known for its three horns and large bony frill.";
+        interestingFact = "Its horns were likely used for defense and combat with rivals.";
       },
       {
         id = 3;
-        name = "Pangolin";
-        category = "Rare Animals";
-        shortFact = "Pangolins are the only mammals with true scales.";
-        facts = [
-          "There are eight species of pangolin, found across Africa and Asia.",
-          "They roll into a tight ball when threatened, using their scales as armor.",
-          "Pangolins are the most trafficked mammal in the world.",
-          "Their diet consists mainly of ants and termites.",
-        ];
-        conservationStatus = "Endangered";
+        name = "Stegosaurus";
+        era = "Jurassic";
+        diet = "Herbivore";
+        period = "155-150 million years ago";
+        length = "30 feet";
+        description = "Stegosaurus is famous for its row of bony plates along its back.";
+        interestingFact = "Its tail spikes were called 'thagomizers'.";
       },
-
-      // Dinosaurs
       {
         id = 4;
-        name = "Tyrannosaurus Rex";
-        category = "Dinosaurs";
-        shortFact = "T-Rex had one of the strongest bites in history.";
-        facts = [
-          "T-Rex lived around 68 million years ago during the late Cretaceous period.",
-          "It could grow up to 40 feet long and 12 feet tall at the hips.",
-          "T-Rex had keen eyesight and an excellent sense of smell.",
-          "Despite popular belief, T-Rex could likely run up to 20 mph.",
-        ];
-        conservationStatus = "Extinct";
+        name = "Velociraptor";
+        era = "Cretaceous";
+        diet = "Carnivore";
+        period = "75-71 million years ago";
+        length = "6.8 feet";
+        description = "Velociraptor was a small but fierce predator.";
+        interestingFact = "Contrary to movies, real velociraptors were about the size of a turkey.";
       },
       {
         id = 5;
-        name = "Triceratops";
-        category = "Dinosaurs";
-        shortFact = "Triceratops means 'three-horned face'.";
-        facts = [
-          "Triceratops lived about 68-66 million years ago, also during the late Cretaceous period.",
-          "It had three facial horns and a large bony frill.",
-          "Triceratops fossils are commonly found in North America.",
-          "Its beak was designed for eating tough, fibrous plants.",
-        ];
-        conservationStatus = "Extinct";
+        name = "Brachiosaurus";
+        era = "Jurassic";
+        diet = "Herbivore";
+        period = "154-153 million years ago";
+        length = "85 feet";
+        description = "Brachiosaurus had long necks and was one of the tallest dinosaurs.";
+        interestingFact = "Its longer front legs gave its neck an upward angle.";
       },
       {
         id = 6;
-        name = "Velociraptor";
-        category = "Dinosaurs";
-        shortFact = "Velociraptors were actually the size of turkeys.";
-        facts = [
-          "They lived about 75 to 71 million years ago.",
-          "Velociraptors had sharp, curved claws and were likely covered in feathers.",
-          "They were skilled hunters and scavengers.",
-          "Despite their small size, they were among the most intelligent dinosaurs.",
-        ];
-        conservationStatus = "Extinct";
+        name = "Ankylosaurus";
+        era = "Cretaceous";
+        diet = "Herbivore";
+        period = "68-66 million years ago";
+        length = "26 feet";
+        description = "Ankylosaurus was heavily armored with a large club-like tail.";
+        interestingFact = "Its body armor protected it from predators.";
       },
-
-      // Sea Creatures
       {
         id = 7;
-        name = "Blue Whale";
-        category = "Sea Creatures";
-        shortFact = "Blue whales are the largest animals ever known to exist.";
-        facts = [
-          "An adult blue whale can weigh up to 200 tons.",
-          "Their heart is the size of a small car and weighs around 400 pounds.",
-          "Blue whales communicate using low-frequency sounds that can travel for miles underwater.",
-          "Despite their size, they feed primarily on tiny shrimp-like animals called krill.",
-        ];
-        conservationStatus = "Endangered";
+        name = "Allosaurus";
+        era = "Jurassic";
+        diet = "Carnivore";
+        period = "155-150 million years ago";
+        length = "28 feet";
+        description = "Allosaurus was a top predator of the late Jurassic period.";
+        interestingFact = "It had sharp teeth and strong jaws.";
       },
       {
         id = 8;
-        name = "Giant Squid";
-        category = "Sea Creatures";
-        shortFact = "Giant squids can reach lengths of up to 43 feet.";
-        facts = [
-          "They have the largest eyes in the animal kingdom, about the size of a basketball.",
-          "Giant squids were the inspiration for the legendary sea monster, the Kraken.",
-          "They live at depths of up to 3,000 feet and are rarely seen by humans.",
-          "Their tentacles are lined with suckers and hooks for capturing prey.",
-        ];
-        conservationStatus = "Unknown";
+        name = "Iguanodon";
+        era = "Cretaceous";
+        diet = "Herbivore";
+        period = "126-122 million years ago";
+        length = "33 feet";
+        description = "Iguanodon was one of the first dinosaurs discovered.";
+        interestingFact = "It had thumb spikes for defense.";
       },
       {
         id = 9;
-        name = "Clownfish";
-        category = "Sea Creatures";
-        shortFact = "Clownfish live in symbiosis with sea anemones.";
-        facts = [
-          "They are immune to the stings of sea anemones due to a special mucus coating on their skin.",
-          "Clownfish can change sex, with the dominant male becoming female when necessary.",
-          "There are around 30 different species of clownfish.",
-          "Their bright coloration serves as a warning to predators.",
-        ];
-        conservationStatus = "Least Concern";
+        name = "Apatosaurus";
+        era = "Jurassic";
+        diet = "Herbivore";
+        period = "152-151 million years ago";
+        length = "75 feet";
+        description = "Apatosaurus was a large long-necked dinosaur.";
+        interestingFact = "Its long tail could probably make a cracking sound.";
       },
-
-      // Land Animals
       {
         id = 10;
-        name = "African Elephant";
-        category = "Land Animals";
-        shortFact = "African elephants are the largest land animals on Earth.";
-        facts = [
-          "They have larger ears than their Asian counterparts, which help regulate body temperature.",
-          "Elephants use their trunks for breathing, drinking, and grasping objects.",
-          "Females live in family groups led by a matriarch.",
-          "An elephant’s brain weighs about 11 pounds, keeping them among the smartest animals.",
-        ];
-        conservationStatus = "Vulnerable";
+        name = "Pteranodon";
+        era = "Cretaceous";
+        diet = "Carnivore";
+        period = "83-70 million years ago";
+        length = "Wingspan 20-25 feet";
+        description = "Pteranodon was a large flying reptile.";
+        interestingFact = "It wasn't actually a dinosaur, but a pterosaur.";
       },
       {
         id = 11;
-        name = "Cheetah";
-        category = "Land Animals";
-        shortFact = "Cheetahs are the fastest land animals, reaching speeds up to 75 mph.";
-        facts = [
-          "They can accelerate from 0 to 60 mph in just a few seconds.",
-          "Cheetahs have distinctive black 'tear marks' running from the eyes to the mouth.",
-          "Despite their speed, cheetahs tire quickly after short sprints.",
-          "They hunt primarily during the day to avoid competition with larger predators.",
-        ];
-        conservationStatus = "Vulnerable";
+        name = "Compsognathus";
+        era = "Jurassic";
+        diet = "Carnivore";
+        period = "150 million years ago";
+        length = "3.3 feet";
+        description = "Compsognathus was one of the smallest dinosaurs.";
+        interestingFact = "It could run very fast to catch prey.";
       },
       {
         id = 12;
-        name = "Giant Panda";
-        category = "Land Animals";
-        shortFact = "Giant pandas have a diet consisting almost entirely of bamboo.";
-        facts = [
-          "They spend up to 12 hours a day eating.",
-          "Giant pandas have specially adapted wrist bones that function like thumbs.",
-          "There are an estimated 1,800 pandas left in the wild.",
-          "Panda cubs are born pink, blind, and helpless.",
-        ];
-        conservationStatus = "Vulnerable";
+        name = "Plateosaurus";
+        era = "Triassic";
+        diet = "Herbivore";
+        period = "214-204 million years ago";
+        length = "27 feet";
+        description = "Plateosaurus lived during the late Triassic period.";
+        interestingFact = "It was one of the earliest large plant-eating dinosaurs.";
       },
     ];
-    animals.addAll(seededAnimals.values());
+    dinosaurs.addAll(seededDinosaurs.values());
   };
 
-  seedAnimals();
+  seedDinosaurs();
 
-  public query func getAllAnimals() : async [Animal] {
-    animals.toArray().sort();
+  public shared ({ caller }) func addDinosaur(input : DinosaurInput) : async () {
+    let newDinosaur : Dinosaur = {
+      id = nextId;
+      name = input.name;
+      era = input.era;
+      diet = input.diet;
+      period = input.period;
+      length = input.length;
+      description = input.description;
+      interestingFact = input.interestingFact;
+    };
+    dinosaurs.add(newDinosaur);
+    nextId += 1;
   };
 
-  public query func getAnimalsByCategory(category : Text) : async [Animal] {
-    animals.filter(
-      func(animal) { Text.equal(animal.category, category) }
+  public query ({ caller }) func getAllDinosaurs() : async [Dinosaur] {
+    dinosaurs.toArray().sort();
+  };
+
+  public query ({ caller }) func getDinosaursByEra(era : Text) : async [Dinosaur] {
+    dinosaurs.filter(
+      func(dino) { Text.equal(dino.era, era) }
     ).toArray().sort();
   };
 
-  public query func getAnimal(id : Nat) : async Animal {
-    let found = animals.filter(
-      func(animal) { animal.id == id }
+  public query ({ caller }) func getDinosaurById(id : Nat) : async Dinosaur {
+    let found = dinosaurs.filter(
+      func(dino) { dino.id == id }
     ).toArray();
-
     if (found.size() == 0) {
-      Runtime.trap("Animal not found");
+      Runtime.trap("Dinosaur not found");
     } else {
       found[0];
     };
   };
 
-  public query func getCategories() : async [Text] {
-    categoriesArray;
+  public query ({ caller }) func getQuickFunFacts() : async [Text] {
+    quickFunFacts;
   };
 };

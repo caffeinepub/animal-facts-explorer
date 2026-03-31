@@ -7,17 +7,29 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export interface Animal {
-    id: bigint;
+export interface DinosaurInput {
+    era: string;
+    period: string;
+    diet: string;
     name: string;
-    shortFact: string;
-    category: string;
-    conservationStatus: string;
-    facts: Array<string>;
+    description: string;
+    length: string;
+    interestingFact: string;
+}
+export interface Dinosaur {
+    id: bigint;
+    era: string;
+    period: string;
+    diet: string;
+    name: string;
+    description: string;
+    length: string;
+    interestingFact: string;
 }
 export interface backendInterface {
-    getAllAnimals(): Promise<Array<Animal>>;
-    getAnimal(id: bigint): Promise<Animal>;
-    getAnimalsByCategory(category: string): Promise<Array<Animal>>;
-    getCategories(): Promise<Array<string>>;
+    addDinosaur(input: DinosaurInput): Promise<void>;
+    getAllDinosaurs(): Promise<Array<Dinosaur>>;
+    getDinosaurById(id: bigint): Promise<Dinosaur>;
+    getDinosaursByEra(era: string): Promise<Array<Dinosaur>>;
+    getQuickFunFacts(): Promise<Array<string>>;
 }

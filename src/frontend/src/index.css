@@ -1,4 +1,16 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap");
+@font-face {
+  font-family: "Fraunces";
+  src: url("/assets/fonts/Fraunces.woff2") format("woff2");
+  font-weight: 300 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Figtree";
+  src: url("/assets/fonts/Figtree.woff2") format("woff2");
+  font-weight: 300 900;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
@@ -6,108 +18,121 @@
 
 @layer base {
   :root {
-    --radius: 0.75rem;
+    /* Blue theme with black text */
+    --background: 220 70% 40%;
+    --foreground: 0 0% 0%;
+    --card: 220 65% 48%;
+    --card-foreground: 0 0% 0%;
+    --popover: 220 65% 48%;
+    --popover-foreground: 0 0% 0%;
+    --primary: 45 90% 55%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 220 55% 55%;
+    --secondary-foreground: 0 0% 0%;
+    --muted: 220 55% 50%;
+    --muted-foreground: 0 0% 15%;
+    --accent: 220 60% 55%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 50% 55%;
+    --input: 220 50% 55%;
+    --ring: 45 90% 55%;
+    --radius: 0.5rem;
 
-    /* Color palette — deep teal/navy editorial theme */
-    /* #0B2B36 deep teal navy */
-    --background: 1 0 0;
-    --foreground: 0.18 0.025 210;
-    --card: 1 0 0;
-    --card-foreground: 0.18 0.025 210;
-    --popover: 1 0 0;
-    --popover-foreground: 0.18 0.025 210;
-    /* teal accent #2AAE9C */
-    --primary: 0.63 0.1 185;
-    --primary-foreground: 1 0 0;
-    /* secondary light */
-    --secondary: 0.95 0.01 210;
-    --secondary-foreground: 0.22 0.04 210;
-    --muted: 0.95 0.01 210;
-    --muted-foreground: 0.5 0.025 220;
-    --accent: 0.95 0.01 210;
-    --accent-foreground: 0.22 0.04 210;
-    --destructive: 0.577 0.245 27.325;
-    --destructive-foreground: 1 0 0;
-    /* light border #D9E3E6 */
-    --border: 0.9 0.015 210;
-    --input: 0.9 0.015 210;
-    --ring: 0.63 0.1 185;
-    --chart-1: 0.646 0.222 41.116;
-    --chart-2: 0.6 0.118 184.704;
-    --chart-3: 0.398 0.07 227.392;
-    --chart-4: 0.828 0.189 84.429;
-    --chart-5: 0.769 0.188 70.08;
-    --sidebar: 0.985 0 0;
-    --sidebar-foreground: 0.145 0 0;
-    --sidebar-primary: 0.63 0.1 185;
-    --sidebar-primary-foreground: 1 0 0;
-    --sidebar-accent: 0.97 0 0;
-    --sidebar-accent-foreground: 0.205 0 0;
-    --sidebar-border: 0.922 0 0;
-    --sidebar-ring: 0.708 0 0;
-
-    /* Custom brand tokens */
-    --teal-dark: oklch(0.22 0.04 210); /* #0B2B36 */
-    --teal-mid: oklch(0.28 0.055 200); /* slightly lighter */
-    --teal-accent: oklch(0.63 0.1 185); /* #2AAE9C */
-    --orange-accent: oklch(0.68 0.15 55); /* #E28A2E */
-    --text-dark: oklch(0.18 0.025 210); /* #142126 */
-    --text-muted: oklch(0.5 0.025 220); /* #66757C */
-    --card-border: oklch(0.9 0.015 210); /* #D9E3E6 */
-  }
-
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    /* Era badge colors */
+    --triassic: 25 80% 55%;
+    --jurassic: 142 40% 38%;
+    --cretaceous: 186 50% 35%;
   }
 }
 
-.fauna-header {
-  background-color: var(--teal-dark);
+* {
+  border-color: hsl(var(--border));
 }
 
-.fauna-footer {
-  background-color: var(--teal-dark);
+html {
+  color-scheme: light;
+  scroll-behavior: smooth;
 }
 
-.fauna-strip {
-  background-color: var(--teal-mid);
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: "Figtree", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-.btn-teal {
-  background-color: var(--teal-accent);
-  color: white;
-  border-radius: 9999px;
-  padding: 0.55rem 1.4rem;
-  font-weight: 600;
-  font-size: 0.875rem;
-  transition: opacity 0.2s, transform 0.15s;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  border: none;
-  cursor: pointer;
-}
-.btn-teal:hover {
-  opacity: 0.88;
-  transform: translateY(-1px);
+/* Texture overlay on cards */
+.card-texture {
+  background-image: radial-gradient(
+      circle at 20% 80%,
+      rgba(255, 255, 255, 0.05) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 20%,
+      rgba(255, 255, 255, 0.05) 0%,
+      transparent 50%
+    );
 }
 
-.btn-orange {
-  background-color: var(--orange-accent);
-  color: white;
-  border-radius: 9999px;
-  padding: 0.65rem 1.6rem;
-  font-weight: 700;
-  font-size: 0.95rem;
-  transition: opacity 0.2s, transform 0.15s;
-  border: none;
-  cursor: pointer;
+/* Era badge variants */
+.era-triassic {
+  background-color: rgba(200, 100, 30, 0.25);
+  color: #7a2e00;
+  border: 1px solid rgba(180, 80, 20, 0.6);
 }
-.btn-orange:hover {
-  opacity: 0.88;
-  transform: translateY(-1px);
+
+.era-jurassic {
+  background-color: rgba(40, 140, 80, 0.25);
+  color: #0a4d20;
+  border: 1px solid rgba(30, 120, 60, 0.6);
+}
+
+.era-cretaceous {
+  background-color: rgba(20, 120, 160, 0.25);
+  color: #003a52;
+  border: 1px solid rgba(15, 100, 140, 0.6);
+}
+
+/* Quiz option states */
+.option-correct {
+  background-color: rgba(40, 180, 100, 0.35) !important;
+  border-color: rgb(30, 150, 80) !important;
+  color: #003a15 !important;
+}
+
+.option-wrong {
+  background-color: rgba(220, 60, 40, 0.3) !important;
+  border-color: rgb(200, 50, 30) !important;
+  color: #4a0a00 !important;
+}
+
+.option-reveal {
+  background-color: rgba(40, 160, 90, 0.2) !important;
+  border-color: rgba(30, 130, 70, 0.6) !important;
+}
+
+/* Gold highlight for perfect scores */
+.perfect-score {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 215, 0, 0.25),
+    rgba(255, 200, 50, 0.1)
+  );
+  border-color: rgba(200, 160, 0, 0.6);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(220 55% 55%);
+  border-radius: 3px;
 }

@@ -89,75 +89,101 @@ export class ExternalBlob {
         return this;
     }
 }
-export interface Animal {
-    id: bigint;
+export interface DinosaurInput {
+    era: string;
+    period: string;
+    diet: string;
     name: string;
-    shortFact: string;
-    category: string;
-    conservationStatus: string;
-    facts: Array<string>;
+    description: string;
+    length: string;
+    interestingFact: string;
+}
+export interface Dinosaur {
+    id: bigint;
+    era: string;
+    period: string;
+    diet: string;
+    name: string;
+    description: string;
+    length: string;
+    interestingFact: string;
 }
 export interface backendInterface {
-    getAllAnimals(): Promise<Array<Animal>>;
-    getAnimal(id: bigint): Promise<Animal>;
-    getAnimalsByCategory(category: string): Promise<Array<Animal>>;
-    getCategories(): Promise<Array<string>>;
+    addDinosaur(input: DinosaurInput): Promise<void>;
+    getAllDinosaurs(): Promise<Array<Dinosaur>>;
+    getDinosaurById(id: bigint): Promise<Dinosaur>;
+    getDinosaursByEra(era: string): Promise<Array<Dinosaur>>;
+    getQuickFunFacts(): Promise<Array<string>>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
-    async getAllAnimals(): Promise<Array<Animal>> {
+    async addDinosaur(arg0: DinosaurInput): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.getAllAnimals();
+                const result = await this.actor.addDinosaur(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getAllAnimals();
+            const result = await this.actor.addDinosaur(arg0);
             return result;
         }
     }
-    async getAnimal(arg0: bigint): Promise<Animal> {
+    async getAllDinosaurs(): Promise<Array<Dinosaur>> {
         if (this.processError) {
             try {
-                const result = await this.actor.getAnimal(arg0);
+                const result = await this.actor.getAllDinosaurs();
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getAnimal(arg0);
+            const result = await this.actor.getAllDinosaurs();
             return result;
         }
     }
-    async getAnimalsByCategory(arg0: string): Promise<Array<Animal>> {
+    async getDinosaurById(arg0: bigint): Promise<Dinosaur> {
         if (this.processError) {
             try {
-                const result = await this.actor.getAnimalsByCategory(arg0);
+                const result = await this.actor.getDinosaurById(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getAnimalsByCategory(arg0);
+            const result = await this.actor.getDinosaurById(arg0);
             return result;
         }
     }
-    async getCategories(): Promise<Array<string>> {
+    async getDinosaursByEra(arg0: string): Promise<Array<Dinosaur>> {
         if (this.processError) {
             try {
-                const result = await this.actor.getCategories();
+                const result = await this.actor.getDinosaursByEra(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getCategories();
+            const result = await this.actor.getDinosaursByEra(arg0);
+            return result;
+        }
+    }
+    async getQuickFunFacts(): Promise<Array<string>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getQuickFunFacts();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getQuickFunFacts();
             return result;
         }
     }
